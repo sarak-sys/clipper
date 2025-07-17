@@ -49,9 +49,9 @@ def generate_modifications_combined(seq, mod):
 
 
 def convert_united_to_pd(df):
-    # # Load the Excel file
-    # file_path = 'UF.xlsx'
-    # df = pd.read_excel(file_path)
+# Load the Excel file
+# file_path = 'try_united.xlsx'
+# df = pd.read_excel(file_path)
 
     # Extract content between "|" in the 'protein_id' column and rename the column to 'Master Protein Accessions'
     try:
@@ -72,42 +72,44 @@ def convert_united_to_pd(df):
 
     # Drop the peptide_start and peptide_end columns
     df = df.drop(columns=['start', 'end'])
-  
-    # Apply the function
-    try:
+    
+
+    #if the Mod column exists it maps the values as in mod_map above, if more mapping needed, it can be added to mod_map whenever.
+    #if no Mod column exists it creates one with value "dimet" (only needed to run).
+    if "Mod" in df.columns:
+        df["Mod"] = df["Mod"].fillna("Unmodified")
         df['Modifications'] = df.apply(lambda row: generate_modifications_combined(row['seq'], row['Mod']), axis=1)
-        logging.info("Successfully created column: 'Modifications'")
-    except KeyError:
-        logging.error("Could not create 'Annotated Sequence'. Please ensure that the column 'Mod' is present in your input file.")
-   
+        # Drop the original 'Mod' column
+        #df = df.drop(columns=['Mod'])
+        logging.info("Successfully created column: 'Modifications', Mod column has been converted to Modifications")
+    else:
+        df["Mod"] = "dimet"
+        df['Modifications'] = df.apply(lambda row: generate_modifications_combined(row['seq'], row['Mod']), axis=1)
+        logging.info("Successfully created column: 'Modifications'. Values are ''")
+
     # Drop the original 'protein' column
     df = df.drop(columns=['protein'])
 
 
-    # Drop the original 'Mod' column
-    df = df.drop(columns=['Mod'])
+    # # Drop the ratio columns 
+    # df.drop(columns=ratio_cols, inplace=True)
 
+    #create the abundances columns.
+    rename_map = {}
 
-    # Set  reference intensity
-    reference_intensity = 1000
+    for col in df.columns:
+        if col.startswith("light_area "):
+            suffix = col[len("light_area "):]  # remove the prefix
+            new_col = f"Abundances (Normalized): light{suffix}"
+            rename_map[col] = new_col
+        elif col.startswith("heavy_area "):
+            suffix = col[len("heavy_area "):]
+            new_col = f"Abundances (Normalized): heavy{suffix}"
+            rename_map[col] = new_col
 
-    # Identify ratio columns 
-    ratio_cols = [col for col in df.columns if col.startswith("ratio") and not col.startswith("logratio")]
-    
-    if not(ratio_cols):
-       logging.info("No 'ratio' columns found. Abundances will NOT be created.") 
-
-    # Create new normalized abundance columns
-    for i, col in enumerate(ratio_cols, start=1):
-        new_col = f"Abundances (Normalized): Repeat{i}"
-        df[new_col] = df[col] * reference_intensity
-        logging.info(f'Column "{col}" has been converted to "{new_col}".')
-
-
-    # Drop the ratio columns 
-    df.drop(columns=ratio_cols, inplace=True)
-
+    # Apply renaming
+    df.rename(columns=rename_map, inplace=True)
     # Save the modified dataframe to a new file
-    # modified_file_path = 'Modified_United.xlsx'
+    # modified_file_path = 'Modified_try_United.xlsx'
     # df.to_excel(modified_file_path, index=False)
     return df
