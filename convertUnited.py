@@ -4,9 +4,7 @@ import logging
 def is_united_format(df):
     """
     recognize if the datafile is a UNITED form,
-    if both:
-    -dataframe first column is "seq" 
-    - also has columns that starts with "ratio" 
+    if light_area or heavy_area column exists 
 
     """
     has_light_or_heavy = any(('light_area' in col or 'heavy_area' in col) for col in df.columns)
