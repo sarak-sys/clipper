@@ -9,12 +9,8 @@ def is_united_format(df):
     - also has columns that starts with "ratio" 
 
     """
-
-    first_col_is_seq = (df.columns[0].lower() == 'seq')
-    has_ratio_cols = any(
-    col.lower().startswith('ratio') and not col.lower().startswith('logratio')
-    for col in df.columns)
-    return first_col_is_seq and has_ratio_cols
+    has_light_or_heavy = any(('light_area' in col or 'heavy_area' in col) for col in df.columns)
+    return  has_light_or_heavy
 
 
 
@@ -64,14 +60,19 @@ def convert_united_to_pd(df):
     df.replace(['','0 dev 0','num dev 0'], pd.NA,inplace=True)
 
     #Create the Annotated Sequence column using the columns seq,end,start
-    try:
+    
+    if  "start" in df.columns and "end" in df.columns:
         df['Annotated Sequence'] = '[' + df['start'].str.upper() + '].' + df['seq'] + '.[' + df['end'].str.upper() + ']'
         logging.info("Successfully created column: 'Annotated Sequence'")
-    except KeyError:
-        logging.error("Could not create 'Annotated Sequence'. Please ensure that the columns 'seq', 'start', and 'end' are present in your input file.")
+    else:
+        if "before" in df.columns and "after" in df.columns:
+            df['Annotated Sequence'] = '[' + df['before'].str.upper() + '].' + df['seq'] + '.[' + df['after'].str.upper() + ']'
+            logging.info("Successfully created column: 'Annotated Sequence'")
+        else:
+            logging.error("Could not create 'Annotated Sequence'. Please ensure that the columns 'seq' and ('start', and 'end') or ('before' anf 'after') are present in your input file.")
 
-    # Drop the peptide_start and peptide_end columns
-    df = df.drop(columns=['start', 'end'])
+    # # Drop the peptide_start and peptide_end columns
+    # df = df.drop(columns=['start', 'end'])
     
 
     #if the Mod column exists it maps the values as in mod_map above, if more mapping needed, it can be added to mod_map whenever.

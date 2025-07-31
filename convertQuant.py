@@ -17,9 +17,14 @@ MOD_MASS_MAP = {
 def is_quant_format(df):
     """
     the QUANT formait is detected by the presence of at least one column "Light MaxLFQ Intensity".
+    - presence of light modified peptide and light modified peptide
 
     """
-    return "Light MaxLFQ Intensity" in " ".join(df.columns)
+
+    has_light_col = "Light Modified Peptide" in df.columns
+    has_heavy_col = "Heavy Modified Peptide" in df.columns
+
+    return "Light MaxLFQ Intensity" in " ".join(df.columns) and has_heavy_col and has_light_col
 
 
 def extract_mass_modifications(peptide):
@@ -79,8 +84,10 @@ def rename_maxlfq_columns(df):
         match = re.match(r"(.+?)\s+(Light|Heavy) MaxLFQ Intensity", col)
         if match:
             sample, label = match.groups()
+            label = label.lower()
             new_col = f"Abundances (Normalized): {label}{sample}"
-            logging.info(f"Renamed column '{col}' to '{new_col}'")
+            #logging.info(f"Renamed column '{col}' to '{new_col}'")
+            logging.info(f" '{new_col}' created successfully")
             return new_col
         return col  # keep unchanged if no match
 
